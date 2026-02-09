@@ -3,6 +3,13 @@ import XCTest
 @testable import SystemPulseApp
 
 final class AppIconProviderTests: XCTestCase {
+    func testMakeIconDefaultsToCompactRuntimeSize() {
+        let icon = AppIconProvider.makeIcon()
+
+        XCTAssertEqual(icon.size.width, 64)
+        XCTAssertEqual(icon.size.height, 64)
+    }
+
     func testMakeIconUsesRequestedSize() {
         let size = CGSize(width: 128, height: 128)
 

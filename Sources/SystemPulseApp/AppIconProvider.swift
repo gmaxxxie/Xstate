@@ -1,7 +1,7 @@
 import AppKit
 
 enum AppIconProvider {
-    static func makeIcon(size: CGSize = CGSize(width: 512, height: 512)) -> NSImage {
+    static func makeIcon(size: CGSize = CGSize(width: 64, height: 64)) -> NSImage {
         let image = NSImage(size: size)
         image.lockFocus()
         defer { image.unlockFocus() }
