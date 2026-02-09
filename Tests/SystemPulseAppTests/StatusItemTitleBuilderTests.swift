@@ -26,7 +26,7 @@ final class StatusItemTitleBuilderTests: XCTestCase {
         XCTAssertEqual(attachmentCount, 2)
     }
 
-    func testBuildInNumericModeMarksWarningAndCriticalValuesWithExpectedColors() {
+    func testBuildInNumericModeDoesNotSetManualValueColors() {
         let title = StatusItemTitleBuilder.build(
             cpuValue: "91%",
             memoryValue: "45%",
@@ -42,11 +42,11 @@ final class StatusItemTitleBuilderTests: XCTestCase {
         let cpuColor = title.attribute(NSAttributedString.Key.foregroundColor, at: cpuRange.location, effectiveRange: nil) as? NSColor
         let memColor = title.attribute(NSAttributedString.Key.foregroundColor, at: memRange.location, effectiveRange: nil) as? NSColor
 
-        XCTAssertEqual(cpuColor, NSColor.systemYellow)
-        XCTAssertEqual(memColor, NSColor.systemRed)
+        XCTAssertNil(cpuColor)
+        XCTAssertNil(memColor)
     }
 
-    func testBuildInStateModeShowsOnlyIconsAndColorsTheIconsByStatus() {
+    func testBuildInStateModeUsesTemplateIconsWithoutManualForegroundColors() {
         let title = StatusItemTitleBuilder.build(
             cpuValue: "42%",
             memoryValue: "75%",
@@ -59,15 +59,20 @@ final class StatusItemTitleBuilderTests: XCTestCase {
         XCTAssertFalse(title.string.contains("%"))
 
         var iconColors: [NSColor?] = []
+        var templateFlags: [Bool] = []
         title.enumerateAttribute(NSAttributedString.Key.attachment, in: NSRange(location: 0, length: title.length), options: []) { value, range, _ in
-            guard value is NSTextAttachment else { return }
+            guard let attachment = value as? NSTextAttachment else { return }
             let color = title.attribute(.foregroundColor, at: range.location, effectiveRange: nil) as? NSColor
             iconColors.append(color)
+            templateFlags.append(attachment.image?.isTemplate ?? false)
         }
 
         XCTAssertEqual(iconColors.count, 2)
-        XCTAssertEqual(iconColors[0], NSColor.systemYellow)
-        XCTAssertEqual(iconColors[1], NSColor.systemRed)
+        XCTAssertEqual(templateFlags.count, 2)
+        XCTAssertNil(iconColors[0])
+        XCTAssertNil(iconColors[1])
+        XCTAssertTrue(templateFlags[0])
+        XCTAssertTrue(templateFlags[1])
     }
 
     func testBuildInStateModeReusesPrebuiltTitleForSameStatusPair() {

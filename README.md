@@ -3,7 +3,7 @@
 Xstate 是一个原生 macOS 状态栏小应用（无窗口），用于实时展示 CPU 与内存压力。  
 支持两种显示模式：
 
-- 状态模式：白/黄/红图标
+- 状态模式：模板单色图标（随 macOS 菜单栏明暗自动黑/白切换）
 - 数值模式：百分比
 
 内存口径为 `Used = App + Wired + Compressed`，`Cached Files` 单独展示，不计入告警百分比。
@@ -25,9 +25,9 @@ Xstate 是一个原生 macOS 状态栏小应用（无窗口），用于实时展
 
 ![Xstate Numeric Mode](docs/images/numeric-mode.png)
 
-### 状态模式（白/黄/红图标）
+### 状态模式（模板单色图标）
 
-菜单项显示 `Switch to Numeric View`，表示当前处于状态模式，状态栏使用图标颜色表达负载等级。
+菜单项显示 `Switch to Numeric View`，表示当前处于状态模式，状态栏使用模板图标并由系统自动适配黑/白。`Warning/Critical` 通过图形标记区分，不依赖彩色前景。
 
 ![Xstate Status Mode](docs/images/status-mode.png)
 
@@ -86,9 +86,9 @@ private let thresholds = AlertThresholds(
 )
 ```
 
-- `Warning`：黄色预警
-- `Critical`：红色告警
-- 低于 `Warning`：白色
+- `Warning`：警告标记（模板图标，自动黑/白）
+- `Critical`：严重标记（模板图标，自动黑/白）
+- 低于 `Warning`：普通图标（模板图标，自动黑/白）
 
 ## 目录结构
 

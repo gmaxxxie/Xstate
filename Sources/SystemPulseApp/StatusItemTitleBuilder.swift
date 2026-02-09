@@ -17,13 +17,11 @@ enum StatusItemTitleBuilder {
         }
 
         let title = NSMutableAttributedString()
-        title.append(iconAttachment(cpu: true, status: cpuStatus, mode: mode))
+        title.append(iconAttachment(cpu: true, status: cpuStatus))
 
         title.append(NSAttributedString(string: " \(cpuValue)  "))
-        title.append(iconAttachment(cpu: false, status: memoryStatus, mode: mode))
+        title.append(iconAttachment(cpu: false, status: memoryStatus))
         title.append(NSAttributedString(string: " \(memoryValue)"))
-        applyValueColor(to: title, value: cpuValue, status: cpuStatus, backwards: false)
-        applyValueColor(to: title, value: memoryValue, status: memoryStatus, backwards: true)
 
         return title
     }
@@ -48,9 +46,9 @@ enum StatusItemTitleBuilder {
         memoryStatus: ResourceStatus
     ) -> NSAttributedString {
         let title = NSMutableAttributedString()
-        title.append(iconAttachment(cpu: true, status: cpuStatus, mode: .state))
+        title.append(iconAttachment(cpu: true, status: cpuStatus))
         title.append(NSAttributedString(string: "  "))
-        title.append(iconAttachment(cpu: false, status: memoryStatus, mode: .state))
+        title.append(iconAttachment(cpu: false, status: memoryStatus))
         return title
     }
 
@@ -69,41 +67,22 @@ enum StatusItemTitleBuilder {
         }
     }
 
-    private static func applyValueColor(
-        to title: NSMutableAttributedString,
-        value: String,
-        status: ResourceStatus,
-        backwards: Bool
-    ) {
-        guard let color = valueColor(for: status) else { return }
-        let options: NSString.CompareOptions = backwards ? [.backwards] : []
-        let range = (title.string as NSString).range(of: value, options: options)
-        guard range.location != NSNotFound else { return }
-        title.addAttribute(.foregroundColor, value: color, range: range)
-    }
-
     private static func iconAttachment(
         cpu: Bool,
-        status: ResourceStatus,
-        mode: StatusItemDisplayMode
+        status: ResourceStatus
     ) -> NSAttributedString {
         let attachment = NSTextAttachment()
         attachment.image = cpu ? cpuIconImage(for: status) : memoryIconImage(for: status)
         attachment.bounds = NSRect(x: 0, y: -1, width: iconSize.width, height: iconSize.height)
-
-        let attributed = NSMutableAttributedString(attachment: attachment)
-        if mode == .state {
-            attributed.addAttribute(.foregroundColor, value: iconColor(for: status), range: NSRange(location: 0, length: attributed.length))
-        }
-        return attributed
+        return NSAttributedString(attachment: attachment)
     }
 
-    private static let cpuNormalIconImage: NSImage = makeChipIcon(memory: false, strokeColor: .white)
-    private static let cpuWarningIconImage: NSImage = makeChipIcon(memory: false, strokeColor: .systemYellow)
-    private static let cpuCriticalIconImage: NSImage = makeChipIcon(memory: false, strokeColor: .systemRed)
-    private static let memoryNormalIconImage: NSImage = makeChipIcon(memory: true, strokeColor: .white)
-    private static let memoryWarningIconImage: NSImage = makeChipIcon(memory: true, strokeColor: .systemYellow)
-    private static let memoryCriticalIconImage: NSImage = makeChipIcon(memory: true, strokeColor: .systemRed)
+    private static let cpuNormalIconImage: NSImage = makeChipIcon(memory: false, status: .normal)
+    private static let cpuWarningIconImage: NSImage = makeChipIcon(memory: false, status: .warning)
+    private static let cpuCriticalIconImage: NSImage = makeChipIcon(memory: false, status: .critical)
+    private static let memoryNormalIconImage: NSImage = makeChipIcon(memory: true, status: .normal)
+    private static let memoryWarningIconImage: NSImage = makeChipIcon(memory: true, status: .warning)
+    private static let memoryCriticalIconImage: NSImage = makeChipIcon(memory: true, status: .critical)
 
     private static func cpuIconImage(for status: ResourceStatus) -> NSImage {
         switch status {
@@ -127,34 +106,12 @@ enum StatusItemTitleBuilder {
         }
     }
 
-    private static func valueColor(for status: ResourceStatus) -> NSColor? {
-        switch status {
-        case .normal:
-            return nil
-        case .warning:
-            return .systemYellow
-        case .critical:
-            return .systemRed
-        }
-    }
-
-    private static func iconColor(for status: ResourceStatus) -> NSColor {
-        switch status {
-        case .normal:
-            return .white
-        case .warning:
-            return .systemYellow
-        case .critical:
-            return .systemRed
-        }
-    }
-
-    private static func makeChipIcon(memory: Bool, strokeColor: NSColor) -> NSImage {
+    private static func makeChipIcon(memory: Bool, status: ResourceStatus) -> NSImage {
         let image = NSImage(size: iconSize)
         image.lockFocus()
         defer { image.unlockFocus() }
 
-        strokeColor.setStroke()
+        NSColor.black.setStroke()
         NSColor.clear.setFill()
         if memory {
             let module = NSRect(x: 1.2, y: 3.0, width: 9.6, height: 5.6)
@@ -201,8 +158,25 @@ enum StatusItemTitleBuilder {
                 right.stroke()
             }
         }
+        NSColor.black.setFill()
+        drawStatusMarker(status: status)
 
-        image.isTemplate = false
+        image.isTemplate = true
         return image
+    }
+
+    private static func drawStatusMarker(status: ResourceStatus) {
+        switch status {
+        case .normal:
+            return
+        case .warning:
+            let marker = NSBezierPath(roundedRect: NSRect(x: 8.2, y: 9.1, width: 2.4, height: 1.1), xRadius: 0.5, yRadius: 0.5)
+            marker.fill()
+        case .critical:
+            let stem = NSBezierPath(roundedRect: NSRect(x: 9.0, y: 8.1, width: 0.9, height: 2.4), xRadius: 0.45, yRadius: 0.45)
+            stem.fill()
+            let dot = NSBezierPath(ovalIn: NSRect(x: 9.0, y: 7.0, width: 0.9, height: 0.9))
+            dot.fill()
+        }
     }
 }
