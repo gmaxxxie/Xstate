@@ -17,6 +17,20 @@ Xstate 是一个原生 macOS 状态栏小应用（无窗口），用于实时展
 - 菜单支持 `Switch to Numeric View / Switch to Status View`
 - 内存明细包括：Physical、Used、Cached Files、App、Wired、Compressed
 
+## 界面截图
+
+### 数值模式（显示百分比）
+
+菜单项显示 `Switch to Status View`，表示当前处于数值模式，状态栏展示 CPU/MEM 百分比。
+
+![Xstate Numeric Mode](docs/images/numeric-mode.png)
+
+### 状态模式（白/黄/红图标）
+
+菜单项显示 `Switch to Numeric View`，表示当前处于状态模式，状态栏使用图标颜色表达负载等级。
+
+![Xstate Status Mode](docs/images/status-mode.png)
+
 ## 环境要求
 
 - macOS 13+
