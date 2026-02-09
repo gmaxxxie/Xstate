@@ -1,8 +1,20 @@
+# macOS system files
 .DS_Store
-/.build
-/Packages
-xcuserdata/
+
+# Swift Package Manager / Xcode artifacts
+/.build/
+/Packages/
+/dist/
+/.swiftpm/
 DerivedData/
-.swiftpm/configuration/registries.json
-.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+xcuserdata/
+*.xcuserstate
+
+# Editor metadata
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local credentials
 .netrc
