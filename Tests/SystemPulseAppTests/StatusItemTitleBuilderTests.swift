@@ -2,6 +2,7 @@ import AppKit
 import XCTest
 @testable import SystemPulseApp
 
+@MainActor
 final class StatusItemTitleBuilderTests: XCTestCase {
     func testBuildInNumericModeUsesTwoIconsAndNoPipeSeparator() {
         let title = StatusItemTitleBuilder.build(
@@ -67,6 +68,25 @@ final class StatusItemTitleBuilderTests: XCTestCase {
         XCTAssertEqual(iconColors.count, 2)
         XCTAssertEqual(iconColors[0], NSColor.systemYellow)
         XCTAssertEqual(iconColors[1], NSColor.systemRed)
+    }
+
+    func testBuildInStateModeReusesPrebuiltTitleForSameStatusPair() {
+        let first = StatusItemTitleBuilder.build(
+            cpuValue: "10%",
+            memoryValue: "20%",
+            cpuStatus: .normal,
+            memoryStatus: .critical,
+            mode: .state
+        )
+        let second = StatusItemTitleBuilder.build(
+            cpuValue: "88%",
+            memoryValue: "66%",
+            cpuStatus: .normal,
+            memoryStatus: .critical,
+            mode: .state
+        )
+
+        XCTAssertTrue(first === second)
     }
 
     func testBuildDoesNotSetCustomFontAttributes() {

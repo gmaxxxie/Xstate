@@ -1,6 +1,7 @@
 import AppKit
 import MonitorCore
 
+@MainActor
 enum StatusItemTitleBuilder {
     private static let iconSize = NSSize(width: 12, height: 12)
 
@@ -11,22 +12,61 @@ enum StatusItemTitleBuilder {
         memoryStatus: ResourceStatus,
         mode: StatusItemDisplayMode
     ) -> NSAttributedString {
+        if mode == .state {
+            return prebuiltStateTitles[stateTitleKey(cpuStatus: cpuStatus, memoryStatus: memoryStatus)]!
+        }
+
         let title = NSMutableAttributedString()
         title.append(iconAttachment(cpu: true, status: cpuStatus, mode: mode))
 
-        switch mode {
-        case .numeric:
-            title.append(NSAttributedString(string: " \(cpuValue)  "))
-            title.append(iconAttachment(cpu: false, status: memoryStatus, mode: mode))
-            title.append(NSAttributedString(string: " \(memoryValue)"))
-            applyValueColor(to: title, value: cpuValue, status: cpuStatus, backwards: false)
-            applyValueColor(to: title, value: memoryValue, status: memoryStatus, backwards: true)
-        case .state:
-            title.append(NSAttributedString(string: "  "))
-            title.append(iconAttachment(cpu: false, status: memoryStatus, mode: mode))
-        }
+        title.append(NSAttributedString(string: " \(cpuValue)  "))
+        title.append(iconAttachment(cpu: false, status: memoryStatus, mode: mode))
+        title.append(NSAttributedString(string: " \(memoryValue)"))
+        applyValueColor(to: title, value: cpuValue, status: cpuStatus, backwards: false)
+        applyValueColor(to: title, value: memoryValue, status: memoryStatus, backwards: true)
 
         return title
+    }
+
+    private static let prebuiltStateTitles: [Int: NSAttributedString] = {
+        var map: [Int: NSAttributedString] = [:]
+        for cpuStatus in allStatuses {
+            for memoryStatus in allStatuses {
+                map[stateTitleKey(cpuStatus: cpuStatus, memoryStatus: memoryStatus)] = buildStateTitle(
+                    cpuStatus: cpuStatus,
+                    memoryStatus: memoryStatus
+                )
+            }
+        }
+        return map
+    }()
+
+    private static let allStatuses: [ResourceStatus] = [.normal, .warning, .critical]
+
+    private static func buildStateTitle(
+        cpuStatus: ResourceStatus,
+        memoryStatus: ResourceStatus
+    ) -> NSAttributedString {
+        let title = NSMutableAttributedString()
+        title.append(iconAttachment(cpu: true, status: cpuStatus, mode: .state))
+        title.append(NSAttributedString(string: "  "))
+        title.append(iconAttachment(cpu: false, status: memoryStatus, mode: .state))
+        return title
+    }
+
+    private static func stateTitleKey(cpuStatus: ResourceStatus, memoryStatus: ResourceStatus) -> Int {
+        statusIndex(cpuStatus) * allStatuses.count + statusIndex(memoryStatus)
+    }
+
+    private static func statusIndex(_ status: ResourceStatus) -> Int {
+        switch status {
+        case .normal:
+            return 0
+        case .warning:
+            return 1
+        case .critical:
+            return 2
+        }
     }
 
     private static func applyValueColor(

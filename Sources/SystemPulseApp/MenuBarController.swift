@@ -25,6 +25,7 @@ final class MenuBarController: NSObject {
     private var latestError = false
     private var isMenuOpen = false
     private var statusDisplayMode: StatusItemDisplayMode = .state
+    private var cadenceController = StateModeRefreshCadenceController()
 
     init(sampler: any SystemSampling, evaluator: StatusEvaluator) {
         self.sampler = sampler
@@ -70,7 +71,16 @@ final class MenuBarController: NSObject {
         let timer = DispatchSource.makeTimerSource(queue: .main)
         timer.schedule(deadline: .now() + 1.0, repeating: 1.0)
         timer.setEventHandler { [weak self] in
-            self?.refresh()
+            guard let self else { return }
+            if self.cadenceController.shouldSkipTimerTick(
+                displayMode: self.statusDisplayMode,
+                isMenuOpen: self.isMenuOpen,
+                latestStatuses: self.latestStatuses,
+                latestError: self.latestError
+            ) {
+                return
+            }
+            self.refresh()
         }
         timer.resume()
         self.timer = timer
