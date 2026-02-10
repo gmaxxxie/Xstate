@@ -88,7 +88,7 @@ enum StatusItemTitleBuilder {
     }
 
     private static func appearanceCacheKey(for appearance: NSAppearance?) -> String {
-        iconTone(for: appearance) == .light ? "light" : "dark"
+        MenuBarTitleRenderKey.appearanceToneKey(for: appearance)
     }
 
     private enum IconTone {
@@ -97,21 +97,8 @@ enum StatusItemTitleBuilder {
     }
 
     private static func iconTone(for appearance: NSAppearance?) -> IconTone {
-        let sourceAppearance = appearance
-            ?? NSApp?.effectiveAppearance
-            ?? NSAppearance.currentDrawing()
-        let match = sourceAppearance.bestMatch(from: [
-            .darkAqua,
-            .vibrantDark,
-            .accessibilityHighContrastDarkAqua,
-            .accessibilityHighContrastVibrantDark,
-            .aqua,
-            .vibrantLight,
-            .accessibilityHighContrastAqua,
-            .accessibilityHighContrastVibrantLight
-        ])
-        switch match {
-        case .darkAqua, .vibrantDark, .accessibilityHighContrastDarkAqua, .accessibilityHighContrastVibrantDark:
+        switch MenuBarTitleRenderKey.appearanceToneKey(for: appearance) {
+        case "dark":
             return .light
         default:
             return .dark

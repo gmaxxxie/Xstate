@@ -41,6 +41,9 @@ final class MenuBarController: NSObject {
 
     func start() {
         refresh()
+        DispatchQueue.main.async { [weak self] in
+            self?.renderLatestStatusBar()
+        }
         startTimer()
     }
 
@@ -156,8 +159,12 @@ final class MenuBarController: NSObject {
         memoryStatus: ResourceStatus
     ) {
         guard let button = statusItem.button else { return }
-        if content.cacheKey == lastStatusKey { return }
-        lastStatusKey = content.cacheKey
+        let renderedKey = MenuBarTitleRenderKey.make(
+            contentCacheKey: content.cacheKey,
+            appearance: button.effectiveAppearance
+        )
+        if renderedKey == lastStatusKey { return }
+        lastStatusKey = renderedKey
         button.attributedTitle = StatusItemTitleBuilder.build(
             cpuValue: content.cpuValue,
             memoryValue: content.memoryValue,
