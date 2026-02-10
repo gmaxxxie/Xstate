@@ -52,7 +52,8 @@ final class MenuBarController: NSObject {
             memoryValue: "--",
             cpuStatus: .normal,
             memoryStatus: .normal,
-            mode: statusDisplayMode
+            mode: statusDisplayMode,
+            appearance: statusItem.button?.effectiveAppearance
         )
         menu.delegate = self
 
@@ -162,7 +163,8 @@ final class MenuBarController: NSObject {
             memoryValue: content.memoryValue,
             cpuStatus: cpuStatus,
             memoryStatus: memoryStatus,
-            mode: statusDisplayMode
+            mode: statusDisplayMode,
+            appearance: button.effectiveAppearance
         )
     }
 

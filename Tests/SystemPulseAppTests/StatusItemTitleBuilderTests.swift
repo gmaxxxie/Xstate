@@ -46,7 +46,7 @@ final class StatusItemTitleBuilderTests: XCTestCase {
         XCTAssertNil(memColor)
     }
 
-    func testBuildInStateModeUsesTemplateIconsWithoutManualForegroundColors() {
+    func testBuildInStateModeUsesMonochromeIconsWithoutManualForegroundColors() {
         let title = StatusItemTitleBuilder.build(
             cpuValue: "42%",
             memoryValue: "75%",
@@ -71,8 +71,8 @@ final class StatusItemTitleBuilderTests: XCTestCase {
         XCTAssertEqual(templateFlags.count, 2)
         XCTAssertNil(iconColors[0])
         XCTAssertNil(iconColors[1])
-        XCTAssertTrue(templateFlags[0])
-        XCTAssertTrue(templateFlags[1])
+        XCTAssertFalse(templateFlags[0])
+        XCTAssertFalse(templateFlags[1])
     }
 
     func testBuildInStateModeReusesPrebuiltTitleForSameStatusPair() {
@@ -125,5 +125,25 @@ final class StatusItemTitleBuilderTests: XCTestCase {
         XCTAssertEqual(iconBounds.count, 2)
         XCTAssertEqual(iconBounds[0].size, NSSize(width: 14, height: 14))
         XCTAssertEqual(iconBounds[1].size, NSSize(width: 14, height: 14))
+    }
+
+    func testBuildUsesLoweredIconBaselineForMenuBarAlignment() {
+        let title = StatusItemTitleBuilder.build(
+            cpuValue: "42%",
+            memoryValue: "75%",
+            cpuStatus: .normal,
+            memoryStatus: .normal,
+            mode: .numeric
+        )
+
+        var iconBounds: [NSRect] = []
+        title.enumerateAttribute(.attachment, in: NSRange(location: 0, length: title.length), options: []) { value, _, _ in
+            guard let attachment = value as? NSTextAttachment else { return }
+            iconBounds.append(attachment.bounds)
+        }
+
+        XCTAssertEqual(iconBounds.count, 2)
+        XCTAssertEqual(iconBounds[0].origin.y, -2)
+        XCTAssertEqual(iconBounds[1].origin.y, -2)
     }
 }

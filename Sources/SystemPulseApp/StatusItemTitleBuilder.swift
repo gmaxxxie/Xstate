@@ -6,56 +6,61 @@ enum StatusItemTitleBuilder {
     private static let iconDesignSize: CGFloat = 12
     private static let iconSize = NSSize(width: 14, height: 14)
     private static let iconScale = min(iconSize.width, iconSize.height) / iconDesignSize
+    private static let iconBaselineOffset: CGFloat = -2
+    private static var stateTitleCache: [StateTitleCacheKey: NSAttributedString] = [:]
 
     static func build(
         cpuValue: String,
         memoryValue: String,
         cpuStatus: ResourceStatus,
         memoryStatus: ResourceStatus,
-        mode: StatusItemDisplayMode
+        mode: StatusItemDisplayMode,
+        appearance: NSAppearance? = nil
     ) -> NSAttributedString {
         if mode == .state {
-            return prebuiltStateTitles[stateTitleKey(cpuStatus: cpuStatus, memoryStatus: memoryStatus)]!
+            let key = StateTitleCacheKey(
+                cpuStatusIndex: statusIndex(cpuStatus),
+                memoryStatusIndex: statusIndex(memoryStatus),
+                appearanceKey: appearanceCacheKey(for: appearance)
+            )
+            if let cached = stateTitleCache[key] {
+                return cached
+            }
+            let title = buildStateTitle(
+                cpuStatus: cpuStatus,
+                memoryStatus: memoryStatus,
+                appearance: appearance
+            )
+            stateTitleCache[key] = title
+            return title
         }
 
         let title = NSMutableAttributedString()
-        title.append(iconAttachment(cpu: true, status: cpuStatus))
+        title.append(iconAttachment(cpu: true, status: cpuStatus, appearance: appearance))
 
         title.append(NSAttributedString(string: " \(cpuValue)  "))
-        title.append(iconAttachment(cpu: false, status: memoryStatus))
+        title.append(iconAttachment(cpu: false, status: memoryStatus, appearance: appearance))
         title.append(NSAttributedString(string: " \(memoryValue)"))
 
         return title
     }
 
-    private static let prebuiltStateTitles: [Int: NSAttributedString] = {
-        var map: [Int: NSAttributedString] = [:]
-        for cpuStatus in allStatuses {
-            for memoryStatus in allStatuses {
-                map[stateTitleKey(cpuStatus: cpuStatus, memoryStatus: memoryStatus)] = buildStateTitle(
-                    cpuStatus: cpuStatus,
-                    memoryStatus: memoryStatus
-                )
-            }
-        }
-        return map
-    }()
-
-    private static let allStatuses: [ResourceStatus] = [.normal, .warning, .critical]
+    private struct StateTitleCacheKey: Hashable {
+        let cpuStatusIndex: Int
+        let memoryStatusIndex: Int
+        let appearanceKey: String
+    }
 
     private static func buildStateTitle(
         cpuStatus: ResourceStatus,
-        memoryStatus: ResourceStatus
+        memoryStatus: ResourceStatus,
+        appearance: NSAppearance?
     ) -> NSAttributedString {
         let title = NSMutableAttributedString()
-        title.append(iconAttachment(cpu: true, status: cpuStatus))
+        title.append(iconAttachment(cpu: true, status: cpuStatus, appearance: appearance))
         title.append(NSAttributedString(string: "  "))
-        title.append(iconAttachment(cpu: false, status: memoryStatus))
+        title.append(iconAttachment(cpu: false, status: memoryStatus, appearance: appearance))
         return title
-    }
-
-    private static func stateTitleKey(cpuStatus: ResourceStatus, memoryStatus: ResourceStatus) -> Int {
-        statusIndex(cpuStatus) * allStatuses.count + statusIndex(memoryStatus)
     }
 
     private static func statusIndex(_ status: ResourceStatus) -> Int {
@@ -71,51 +76,61 @@ enum StatusItemTitleBuilder {
 
     private static func iconAttachment(
         cpu: Bool,
-        status: ResourceStatus
+        status: ResourceStatus,
+        appearance: NSAppearance?
     ) -> NSAttributedString {
         let attachment = NSTextAttachment()
-        attachment.image = cpu ? cpuIconImage(for: status) : memoryIconImage(for: status)
-        attachment.bounds = NSRect(x: 0, y: -iconScale, width: iconSize.width, height: iconSize.height)
+        attachment.image = cpu
+            ? makeChipIcon(memory: false, status: status, appearance: appearance)
+            : makeChipIcon(memory: true, status: status, appearance: appearance)
+        attachment.bounds = NSRect(x: 0, y: iconBaselineOffset, width: iconSize.width, height: iconSize.height)
         return NSAttributedString(attachment: attachment)
     }
 
-    private static let cpuNormalIconImage: NSImage = makeChipIcon(memory: false, status: .normal)
-    private static let cpuWarningIconImage: NSImage = makeChipIcon(memory: false, status: .warning)
-    private static let cpuCriticalIconImage: NSImage = makeChipIcon(memory: false, status: .critical)
-    private static let memoryNormalIconImage: NSImage = makeChipIcon(memory: true, status: .normal)
-    private static let memoryWarningIconImage: NSImage = makeChipIcon(memory: true, status: .warning)
-    private static let memoryCriticalIconImage: NSImage = makeChipIcon(memory: true, status: .critical)
+    private static func appearanceCacheKey(for appearance: NSAppearance?) -> String {
+        iconTone(for: appearance) == .light ? "light" : "dark"
+    }
 
-    private static func cpuIconImage(for status: ResourceStatus) -> NSImage {
-        switch status {
-        case .normal:
-            return cpuNormalIconImage
-        case .warning:
-            return cpuWarningIconImage
-        case .critical:
-            return cpuCriticalIconImage
+    private enum IconTone {
+        case light
+        case dark
+    }
+
+    private static func iconTone(for appearance: NSAppearance?) -> IconTone {
+        let sourceAppearance = appearance
+            ?? NSApp?.effectiveAppearance
+            ?? NSAppearance.currentDrawing()
+        let match = sourceAppearance.bestMatch(from: [
+            .darkAqua,
+            .vibrantDark,
+            .accessibilityHighContrastDarkAqua,
+            .accessibilityHighContrastVibrantDark,
+            .aqua,
+            .vibrantLight,
+            .accessibilityHighContrastAqua,
+            .accessibilityHighContrastVibrantLight
+        ])
+        switch match {
+        case .darkAqua, .vibrantDark, .accessibilityHighContrastDarkAqua, .accessibilityHighContrastVibrantDark:
+            return .light
+        default:
+            return .dark
         }
     }
 
-    private static func memoryIconImage(for status: ResourceStatus) -> NSImage {
-        switch status {
-        case .normal:
-            return memoryNormalIconImage
-        case .warning:
-            return memoryWarningIconImage
-        case .critical:
-            return memoryCriticalIconImage
-        }
+    private static func iconStrokeColor(for appearance: NSAppearance?) -> NSColor {
+        iconTone(for: appearance) == .light ? .white : .black
     }
 
-    private static func makeChipIcon(memory: Bool, status: ResourceStatus) -> NSImage {
+    private static func makeChipIcon(memory: Bool, status: ResourceStatus, appearance: NSAppearance?) -> NSImage {
         let image = NSImage(size: iconSize)
         image.lockFocus()
         defer { image.unlockFocus() }
         let scale = iconScale
         func scaled(_ value: CGFloat) -> CGFloat { value * scale }
+        let iconColor = iconStrokeColor(for: appearance)
 
-        NSColor.black.setStroke()
+        iconColor.setStroke()
         NSColor.clear.setFill()
         if memory {
             let module = NSRect(x: scaled(1.2), y: scaled(3.0), width: scaled(9.6), height: scaled(5.6))
@@ -166,10 +181,10 @@ enum StatusItemTitleBuilder {
                 right.stroke()
             }
         }
-        NSColor.black.setFill()
+        iconColor.setFill()
         drawStatusMarker(status: status, scale: scale)
 
-        image.isTemplate = true
+        image.isTemplate = false
         return image
     }
 
