@@ -3,7 +3,9 @@ import MonitorCore
 
 @MainActor
 enum StatusItemTitleBuilder {
-    private static let iconSize = NSSize(width: 12, height: 12)
+    private static let iconDesignSize: CGFloat = 12
+    private static let iconSize = NSSize(width: 14, height: 14)
+    private static let iconScale = min(iconSize.width, iconSize.height) / iconDesignSize
 
     static func build(
         cpuValue: String,
@@ -73,7 +75,7 @@ enum StatusItemTitleBuilder {
     ) -> NSAttributedString {
         let attachment = NSTextAttachment()
         attachment.image = cpu ? cpuIconImage(for: status) : memoryIconImage(for: status)
-        attachment.bounds = NSRect(x: 0, y: -1, width: iconSize.width, height: iconSize.height)
+        attachment.bounds = NSRect(x: 0, y: -iconScale, width: iconSize.width, height: iconSize.height)
         return NSAttributedString(attachment: attachment)
     }
 
@@ -110,72 +112,87 @@ enum StatusItemTitleBuilder {
         let image = NSImage(size: iconSize)
         image.lockFocus()
         defer { image.unlockFocus() }
+        let scale = iconScale
+        func scaled(_ value: CGFloat) -> CGFloat { value * scale }
 
         NSColor.black.setStroke()
         NSColor.clear.setFill()
         if memory {
-            let module = NSRect(x: 1.2, y: 3.0, width: 9.6, height: 5.6)
-            let modulePath = NSBezierPath(roundedRect: module, xRadius: 1.0, yRadius: 1.0)
-            modulePath.lineWidth = 1.0
+            let module = NSRect(x: scaled(1.2), y: scaled(3.0), width: scaled(9.6), height: scaled(5.6))
+            let modulePath = NSBezierPath(roundedRect: module, xRadius: scaled(1.0), yRadius: scaled(1.0))
+            modulePath.lineWidth = scaled(1.0)
             modulePath.stroke()
 
             for x in [2.3, 5.0, 7.7] {
-                let slot = NSBezierPath(roundedRect: NSRect(x: x, y: 4.1, width: 1.4, height: 2.6), xRadius: 0.4, yRadius: 0.4)
-                slot.lineWidth = 0.7
+                let slot = NSBezierPath(
+                    roundedRect: NSRect(x: scaled(x), y: scaled(4.1), width: scaled(1.4), height: scaled(2.6)),
+                    xRadius: scaled(0.4),
+                    yRadius: scaled(0.4)
+                )
+                slot.lineWidth = scaled(0.7)
                 slot.stroke()
             }
 
             for x in [2.2, 4.0, 5.8, 7.6, 9.4] {
                 let pin = NSBezierPath()
-                pin.move(to: NSPoint(x: x, y: module.minY))
-                pin.line(to: NSPoint(x: x, y: module.minY - 1.2))
-                pin.lineWidth = 0.7
+                pin.move(to: NSPoint(x: scaled(x), y: module.minY))
+                pin.line(to: NSPoint(x: scaled(x), y: module.minY - scaled(1.2)))
+                pin.lineWidth = scaled(0.7)
                 pin.stroke()
             }
         } else {
-            let body = NSRect(x: 1.8, y: 2.0, width: 8.4, height: 8.0)
-            let bodyPath = NSBezierPath(roundedRect: body, xRadius: 1.2, yRadius: 1.2)
-            bodyPath.lineWidth = 1.0
+            let body = NSRect(x: scaled(1.8), y: scaled(2.0), width: scaled(8.4), height: scaled(8.0))
+            let bodyPath = NSBezierPath(roundedRect: body, xRadius: scaled(1.2), yRadius: scaled(1.2))
+            bodyPath.lineWidth = scaled(1.0)
             bodyPath.stroke()
 
-            let core = NSBezierPath(ovalIn: NSRect(x: 4.4, y: 4.4, width: 3.0, height: 3.0))
-            core.lineWidth = 0.8
+            let core = NSBezierPath(ovalIn: NSRect(x: scaled(4.4), y: scaled(4.4), width: scaled(3.0), height: scaled(3.0)))
+            core.lineWidth = scaled(0.8)
             core.stroke()
 
-            let pinLength: CGFloat = 1.1
-            let pinY: [CGFloat] = [3.4, 6.0, 8.6]
+            let pinLength = scaled(1.1)
+            let pinY: [CGFloat] = [3.4, 6.0, 8.6].map(scaled)
             for y in pinY {
                 let left = NSBezierPath()
                 left.move(to: NSPoint(x: body.minX, y: y))
                 left.line(to: NSPoint(x: body.minX - pinLength, y: y))
-                left.lineWidth = 0.8
+                left.lineWidth = scaled(0.8)
                 left.stroke()
 
                 let right = NSBezierPath()
                 right.move(to: NSPoint(x: body.maxX, y: y))
                 right.line(to: NSPoint(x: body.maxX + pinLength, y: y))
-                right.lineWidth = 0.8
+                right.lineWidth = scaled(0.8)
                 right.stroke()
             }
         }
         NSColor.black.setFill()
-        drawStatusMarker(status: status)
+        drawStatusMarker(status: status, scale: scale)
 
         image.isTemplate = true
         return image
     }
 
-    private static func drawStatusMarker(status: ResourceStatus) {
+    private static func drawStatusMarker(status: ResourceStatus, scale: CGFloat) {
+        func scaled(_ value: CGFloat) -> CGFloat { value * scale }
         switch status {
         case .normal:
             return
         case .warning:
-            let marker = NSBezierPath(roundedRect: NSRect(x: 8.2, y: 9.1, width: 2.4, height: 1.1), xRadius: 0.5, yRadius: 0.5)
+            let marker = NSBezierPath(
+                roundedRect: NSRect(x: scaled(8.2), y: scaled(9.1), width: scaled(2.4), height: scaled(1.1)),
+                xRadius: scaled(0.5),
+                yRadius: scaled(0.5)
+            )
             marker.fill()
         case .critical:
-            let stem = NSBezierPath(roundedRect: NSRect(x: 9.0, y: 8.1, width: 0.9, height: 2.4), xRadius: 0.45, yRadius: 0.45)
+            let stem = NSBezierPath(
+                roundedRect: NSRect(x: scaled(9.0), y: scaled(8.1), width: scaled(0.9), height: scaled(2.4)),
+                xRadius: scaled(0.45),
+                yRadius: scaled(0.45)
+            )
             stem.fill()
-            let dot = NSBezierPath(ovalIn: NSRect(x: 9.0, y: 7.0, width: 0.9, height: 0.9))
+            let dot = NSBezierPath(ovalIn: NSRect(x: scaled(9.0), y: scaled(7.0), width: scaled(0.9), height: scaled(0.9)))
             dot.fill()
         }
     }

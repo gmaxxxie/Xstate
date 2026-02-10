@@ -106,4 +106,24 @@ final class StatusItemTitleBuilderTests: XCTestCase {
         let baseFont = title.attribute(NSAttributedString.Key.font, at: 0, effectiveRange: nil)
         XCTAssertNil(baseFont)
     }
+
+    func testBuildUsesMenuBarSizedIcons() {
+        let title = StatusItemTitleBuilder.build(
+            cpuValue: "42%",
+            memoryValue: "75%",
+            cpuStatus: .normal,
+            memoryStatus: .normal,
+            mode: .numeric
+        )
+
+        var iconBounds: [NSRect] = []
+        title.enumerateAttribute(.attachment, in: NSRange(location: 0, length: title.length), options: []) { value, _, _ in
+            guard let attachment = value as? NSTextAttachment else { return }
+            iconBounds.append(attachment.bounds)
+        }
+
+        XCTAssertEqual(iconBounds.count, 2)
+        XCTAssertEqual(iconBounds[0].size, NSSize(width: 14, height: 14))
+        XCTAssertEqual(iconBounds[1].size, NSSize(width: 14, height: 14))
+    }
 }
